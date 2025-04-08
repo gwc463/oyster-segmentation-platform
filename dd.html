@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>牡蛎性腺分割算法平台</title>
+    <!-- 引入Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <!-- 引入ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        #app { display: flex; height: 100vh; }
+        .sidebar { width: 200px; background: #2c3e50; color: white; padding: 20px; }
+        .sidebar ul { list-style: none; padding: 0; }
+        .sidebar li { padding: 10px; cursor: pointer; }
+        .sidebar li:hover { background: #34495e; }
+        .content { flex: 1; padding: 20px; overflow-y: auto; }
+        .login-form, .section { margin-bottom: 20px; }
+        .form-group { margin: 10px 0; }
+        .form-group label { display: block; }
+        button { padding: 8px 16px; background: #3498db; color: white; border: none; cursor: pointer; }
+        button:hover { background: #2980b9; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f2f2f2; }
+        #chart { width: 100%; height: 400px; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 侧边栏 -->
+        <div class="sidebar" v-if="isLoggedIn">
+            <h3>功能菜单</h3>
+            <ul>
+                <li @click="currentSection = 'project'">项目管理</li>
+                <li @click="currentSection = 'dataset'">数据集管理</li>
+                <li @click="currentSection = 'model'">模型管理</li>
+                <li @click="currentSection = 'predict'">性腺分割预测</li>
+                <li @click="currentSection = 'query'">结果查询</li>
+                <li @click="logout">退出登录</li>
+            </ul>
+        </div>
+        <!-- 主内容区 -->
+        <div class="content">
+            <!-- 登录页面 -->
+            <div v-if="!isLoggedIn" class="login-form">
+                <h2>登录</h2>
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input v-model="username" type="text" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input v-model="password" type="password" placeholder="请输入密码">
+                </div>
+                <button @click="login">登录</button>
+                <p>没有账户？<a href="#" @click.prevent="register">注册</a></p>
+            </div>
+            <!-- 项目管理 -->
+            <div v-if="isLoggedIn && currentSection === 'project'" class="section">
+                <h2>项目管理</h2>
+                <button @click="showProjectForm = true">添加项目</button>
+                <div v-if="showProjectForm">
+                    <h3>创建项目</h3>
+                    <div class="form-group">
+                        <label>项目名称</label>
+                        <input v-model="newProject.name" type="text">
+                    </div>
+                    <div class="form-group">
+                        <label>创建者</label>
+                        <input v-model="newProject.creator" type="text">
+                    </div>
+                    <div class="form-group">
+                        <label>描述</label>
+                        <textarea v-model="newProject.description"></textarea>
+                    </div>
+                    <button @click="addProject">提交</button>
+                    <button @click="showProjectForm = false">取消</button>
+                </div>
+                <table>
+                    <tr><th>项目名称</th><th>创建者</th><th>描述</th><th>操作</th></tr>
+                    <tr v-for="project in projects" :key="project.id">
+                        <td>{{ project.name }}</td>
+                        <td>{{ project.creator }}</td>
+                        <td>{{ project.description }}</td>
+                        <td><button @click="deleteProject(project.id)">删除</button></td>
+                    </tr>
+                </table>
+            </div>
+            <!-- 数据集管理 -->
+            <div v-if="isLoggedIn && currentSection === 'dataset'" class="section">
+                <h2>数据集管理</h2>
+                <button @click="showDatasetForm = true">添加数据集</button>
+                <div v-if="showDatasetForm">
+                    <h3>添加数据集</h3>
+                    <div class="form-group">
+                        <label>数据集名称</label>
+                        <input v-model="newDataset.name" type="text">
+                    </div>
+                    <div class="form-group">
+                        <label>数据类型</label>
+                        <input v-model="newDataset.type" type="text">
+                    </div>
+                    <div class="form-group">
+                        <label>数据量</label>
+                        <input v-model="newDataset.size" type="number">
+                    </div>
+                    <button @click="addDataset">提交</button>
+                    <button @click="showDatasetForm = false">取消</button>
+                </div>
+                <table>
+                    <tr><th>数据集名称</th><th>数据类型</th><th>数据量</th><th>操作</th></tr>
+                    <tr v-for="dataset in datasets" :key="dataset.id">
+                        <td>{{ dataset.name }}</td>
+                        <td>{{ dataset.type }}</td>
+                        <td>{{ dataset.size }}</td>
+                        <td><button @click="deleteDataset(dataset.id)">删除</button></td>
+                    </tr>
+                </table>
+            </div>
+            <!-- 模型管理 -->
+            <div v-if="isLoggedIn && currentSection === 'model'" class="section">
+                <h2>模型管理</h2>
+                <button @click="trainModel">训练模型</button>
+                <table>
+                    <tr><th>模型名称</th><th>类型</th><th>状态</th></tr>
+                    <tr v-for="model in models" :key="model.name">
+                        <td>{{ model.name }}</td>
+                        <td>{{ model.type }}</td>
+                        <td>{{ model.status }}</td>
+                    </tr>
+                </table>
+            </div>
+            <!-- 性腺分割预测 -->
+            <div v-if="isLoggedIn && currentSection === 'predict'" class="section">
+                <h2>性腺分割预测</h2>
+                <div class="form-group">
+                    <label>上传MRI图像</label>
+                    <input type="file" @change="uploadImage">
+                </div>
+                <div class="form-group">
+                    <label>选择模型</label>
+                    <select v-model="selectedModel">
+                        <option v-for="model in models" :value="model.name">{{ model.name }}</option>
+                    </select>
+                </div>
+                <button @click="predict">运行预测</button>
+                <div v-if="predictionResult">
+                    <h3>预测结果</h3>
+                    <p>性腺区域: 已分割 | 性别: {{ predictionResult.gender }} | 灰度值: {{ predictionResult.grayValue }}</p>
+                    <div id="chart"></div>
+                </div>
+            </div>
+            <!-- 结果查询 -->
+            <div v-if="isLoggedIn && currentSection === 'query'" class="section">
+                <h2>结果查询</h2>
+                <div class="form-group">
+                    <label>输入项目ID</label>
+                    <input v-model="queryId" type="text">
+                    <button @click="queryResult">查询</button>
+                </div>
+                <div v-if="queryResultData">
+                    <h3>查询结果</h3>
+                    <p>{{ queryResultData }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                isLoggedIn: localStorage.getItem('isLoggedIn') === 'true',
+                username: '',
+                password: '',
+                currentSection: 'project',
+                showProjectForm: false,
+                showDatasetForm: false,
+                newProject: { name: '', creator: '', description: '' },
+                newDataset: { name: '', type: '', size: 0 },
+                projects: [],
+                datasets: [],
+                models: [
+                    { name: 'R-SINet', type: '监督学习', status: '已训练' },
+                    { name: 'CF-Net', type: '监督学习', status: '已训练' },
+                    { name: 'UDA-OG', type: '无监督学习', status: '已训练' }
+                ],
+                selectedModel: 'R-SINet',
+                predictionResult: null,
+                queryId: '',
+                queryResultData: ''
+            },
+            mounted() {
+                if (this.isLoggedIn) {
+                    this.fetchProjects();
+                    this.fetchDatasets();
+                }
+            },
+            methods: {
+                login() {
+                    if (this.username && this.password) {
+                        fetch('http://localhost:8081/api/users/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: this.username, password: this.password })
+})
+                        .then(response => {
+                            if (!response.ok) throw new Error('登录失败: ' + response.status);
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.error) {
+                                alert(data.error);
+                            } else {
+                                this.isLoggedIn = true;
+                                localStorage.setItem('isLoggedIn', 'true');
+                                alert('登录成功');
+                                this.fetchProjects();
+                                this.fetchDatasets();
+                            }
+                        })
+                        .catch(error => alert('登录失败: ' + error));
+                    } else {
+                        alert('请输入用户名和密码');
+                    }
+                },
+                register() {
+                    alert('请联系管理员注册');
+                },
+                logout() {
+                    this.isLoggedIn = false;
+                    localStorage.removeItem('isLoggedIn');
+                    this.username = '';
+                    this.password = '';
+                    this.projects = [];
+                    this.datasets = [];
+                },
+                fetchProjects() {
+                    fetch('http://localhost:8081/api/projects')
+                        .then(response => response.json())
+                        .then(data => this.projects = data)
+                        .catch(error => console.error('获取项目失败:', error));
+                },
+                addProject() {
+                    fetch('http://localhost:8081/api/projects', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.newProject)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        this.projects.push(data);
+                        this.newProject = { name: '', creator: '', description: '' };
+                        this.showProjectForm = false;
+                    })
+                    .catch(error => alert('添加项目失败: ' + error));
+                },
+                deleteProject(id) {
+                    fetch(`http://localhost:8081/api/projects/${id}`, { method: 'DELETE' })
+                        .then(() => {
+                            this.projects = this.projects.filter(p => p.id !== id);
+                        })
+                        .catch(error => alert('删除项目失败: ' + error));
+                },
+                fetchDatasets() {
+                    fetch('http://localhost:8081/api/datasets')
+                        .then(response => response.json())
+                        .then(data => this.datasets = data)
+                        .catch(error => console.error('获取数据集失败:', error));
+                },
+                addDataset() {
+                    fetch('http://localhost:8081/api/datasets', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.newDataset)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        this.datasets.push(data);
+                        this.newDataset = { name: '', type: '', size: 0 };
+                        this.showDatasetForm = false;
+                    })
+                    .catch(error => alert('添加数据集失败: ' + error));
+                },
+                deleteDataset(id) {
+                    fetch(`http://localhost:8081/api/datasets/${id}`, { method: 'DELETE' })
+                        .then(() => {
+                            this.datasets = this.datasets.filter(d => d.id !== id);
+                        })
+                        .catch(error => alert('删除数据集失败: ' + error));
+                },
+                trainModel() {
+                    alert('模型训练已启动（模拟）');
+                },
+                uploadImage(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const formData = new FormData();
+                        formData.append('image', file);
+                        fetch('http://localhost:8081/api/predict/upload', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => console.log('上传成功:', data))
+                        .catch(error => alert('上传失败: ' + error));
+                    }
+                },
+                predict() {
+                    fetch('http://localhost:8081/api/predict', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ model: this.selectedModel })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        this.predictionResult = data;
+                        this.$nextTick(() => this.renderChart());
+                    })
+                    .catch(error => alert('预测失败: ' + error));
+                },
+                renderChart() {
+                    const chart = echarts.init(document.getElementById('chart'));
+                    chart.setOption({
+                        title: { text: '灰度值分布' },
+                        xAxis: { type: 'category', data: ['区域1', '区域2', '区域3'] },
+                        yAxis: { type: 'value' },
+                        series: [{ data: [120, 130, 115], type: 'bar' }]
+                    });
+                },
+                queryResult() {
+    console.log("Querying project ID:", this.queryId);
+    fetch(`http://localhost:8081/api/query/${this.queryId}`)
+        .then(response => {
+            console.log("Response:", response);
+            if (!response.ok) throw new Error("Request failed");
+            return response.json();
+        })
+        .then(data => {
+            console.log("Data received:", data);
+            this.queryResultData = data.result;
+        })
+        .catch(error => alert('查询失败: ' + error));
+}
+            }
+        });
+    </script>
+</body>
+</html>
