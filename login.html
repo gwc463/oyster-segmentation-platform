@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 牡蛎性腺分割算法平台</title>
+    <!-- 引入Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #4a90e2, #1e3a8a); /* 柔和的蓝色渐变背景 */
+            color: #fff;
+        }
+        .login-container {
+            width: 400px;
+            background: rgba(255, 255, 255, 0.1); /* 半透明白色背景 */
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px); /* 毛玻璃效果 */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        h2 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 40px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .form-group .icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 18px;
+        }
+        .captcha-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .captcha-group input {
+            width: 60%;
+            padding: 12px 40px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .captcha-group img {
+            width: 100px;
+            height: 40px;
+            margin-left: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .captcha-group a {
+            margin-left: 10px;
+            color: #a3daff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .captcha-group a:hover {
+            text-decoration: underline;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #66b1ff; /* 按钮颜色 */
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .login-btn:hover {
+            background: #409eff; /* 按钮悬停颜色 */
+        }
+        .links {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .links a {
+            color: #a3daff;
+            text-decoration: none;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="login-container">
+        <h2>登录</h2>
+        <div class="form-group">
+            <span class="icon">👤</span>
+            <input v-model="username" type="text" placeholder="请输入用户名">
+        </div>
+        <div class="form-group">
+            <span class="icon">🔒</span>
+            <input v-model="password" type="password" placeholder="请输入密码">
+        </div>
+        <div class="captcha-group">
+            <div class="form-group" style="width: 60%;">
+                <span class="icon">🔑</span>
+                <input v-model="captchaInput" type="text" placeholder="请输入验证码">
+            </div>
+            <img :src="captchaImage" @click="fetchCaptcha" alt="验证码">
+            <a href="#" @click.prevent="fetchCaptcha">点击刷新</a>
+        </div>
+        <button class="login-btn" @click="login">登录</button>
+        <div class="links">
+            <span>没有账户？<a href="register.html">立即注册</a></span>
+        </div>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                username: '',
+                password: '',
+                captchaInput: '',
+                captchaId: '',
+                captchaImage: ''
+            },
+            mounted() {
+                this.fetchCaptcha();
+            },
+            methods: {
+                fetchCaptcha() {
+                    fetch('http://localhost:8081/api/captcha')
+                        .then(response => response.json())
+                        .then(data => {
+                            this.captchaId = data.captchaId;
+                            this.captchaImage = data.captchaImage;
+                        })
+                        .catch(error => alert('获取验证码失败: ' + error));
+                },
+                login() {
+                    if (!this.username || !this.password) {
+                        alert('请输入用户名和密码');
+                        return;
+                    }
+                    if (!this.captchaInput) {
+                        alert('请输入验证码');
+                        return;
+                    }
+
+                    // 验证验证码
+                    fetch('http://localhost:8081/api/verify-captcha', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ captchaId: this.captchaId, captchaInput: this.captchaInput })
+                    })
+                    .then(response => {
+                        if (!response.ok) return response.json().then(err => { throw new Error(err.error); });
+                        return response.json();
+                    })
+                    .then(() => {
+                        // 验证码验证通过，执行登录
+                        return fetch('http://localhost:8081/api/users/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: this.username, password: this.password })
+                        });
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('登录失败: ' + response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                        } else {
+                            localStorage.setItem('isLoggedIn', 'true');
+                            alert('登录成功');
+                            window.location.href = 'dd.html'; // 跳转到主页面
+                        }
+                    })
+                    .catch(error => {
+                        alert('登录失败: ' + error.message);
+                        this.fetchCaptcha(); // 刷新验证码
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
