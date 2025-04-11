@@ -15,16 +15,16 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: linear-gradient(135deg, #4a90e2, #1e3a8a); /* 柔和的蓝色渐变背景 */
+            background: linear-gradient(135deg, #4a90e2, #1e3a8a);
             color: #fff;
         }
         .login-container {
             width: 400px;
-            background: rgba(255, 255, 255, 0.1); /* 半透明白色背景 */
+            background: rgba(255, 255, 255, 0.1);
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px); /* 毛玻璃效果 */
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
         h2 {
@@ -92,7 +92,7 @@
         .login-btn {
             width: 100%;
             padding: 12px;
-            background: #66b1ff; /* 按钮颜色 */
+            background: #66b1ff;
             color: #fff;
             border: none;
             border-radius: 5px;
@@ -101,7 +101,7 @@
             transition: background 0.3s;
         }
         .login-btn:hover {
-            background: #409eff; /* 按钮悬停颜色 */
+            background: #409eff;
         }
         .links {
             display: flex;
@@ -176,7 +176,6 @@
                         return;
                     }
 
-                    // 验证验证码
                     fetch('http://localhost:8081/api/verify-captcha', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -187,7 +186,6 @@
                         return response.json();
                     })
                     .then(() => {
-                        // 验证码验证通过，执行登录
                         return fetch('http://localhost:8081/api/users/login', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -203,13 +201,15 @@
                             alert(data.error);
                         } else {
                             localStorage.setItem('isLoggedIn', 'true');
+                            localStorage.setItem('userId', data.id);
+                            localStorage.setItem('avatarUrl', data.avatar_url || 'https://via.placeholder.com/40');
                             alert('登录成功');
-                            window.location.href = 'dd.html'; // 跳转到主页面
+                            window.location.href = 'dd.html';
                         }
                     })
                     .catch(error => {
                         alert('登录失败: ' + error.message);
-                        this.fetchCaptcha(); // 刷新验证码
+                        this.fetchCaptcha();
                     });
                 }
             }
