@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>牡蛎性腺分割算法平台</title>
-    <!-- 引入Vue.js -->
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
-    <!-- 引入ECharts -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
         #app { display: flex; height: 100vh; position: relative; }
@@ -21,144 +20,61 @@
             transition: background 0.3s; 
         }
         .sidebar li:hover { background: #34495e; }
-        .sidebar li.active { 
-            background: #1abc9c;
-            font-weight: bold; 
-        }
+        .sidebar li.active { background: #1abc9c; font-weight: bold; }
         .content { flex: 1; padding: 20px; overflow-y: auto; }
         .section { margin-bottom: 20px; }
         .form-group { margin: 10px 0; }
         .form-group label { display: block; }
         .form-group select, .form-group input, .form-group textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;
         }
         button { padding: 8px 16px; background: #3498db; color: white; border: none; cursor: pointer; }
         button:hover { background: #2980b9; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background: #f2f2f2; }
-        #chart { width: 100%; height: 400px; }
-
-        /* 头像样式 */
-        .avatar {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            cursor: pointer;
+        .progress-bar { width: 100%; height: 20px; background: #ddd; border-radius: 5px; overflow: hidden; }
+        .progress { height: 100%; background: #1abc9c; transition: width 0.5s; }
+        .progress.completed { background: #28a745; }
+        .chart-container { width: 100%; height: 300px; margin-top: 20px; }
+        .avatar { position: absolute; top: 20px; right: 20px; cursor: pointer; }
+        .avatar img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #3498db; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; }
+        .modal.show { display: flex; }
+        .modal-content { background: white; padding: 20px; border-radius: 8px; width: 500px; max-width: 90%; position: relative; }
+        .modal-content h3 { margin-top: 0; color: #2c3e50; }
+        .modal-content .form-group { margin: 15px 0; }
+        .modal-content .form-group label { display: block; margin-bottom: 5px; color: #34495e; }
+        .modal-content .form-group input, .modal-content .form-group select, .modal-content .form-group textarea {
+            width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;
         }
-        .avatar img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid #3498db;
-        }
-
-        /* 通用弹窗样式 */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
-        }
-        .modal.show {
-            display: flex;
-        }
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 500px;
-            max-width: 90%;
-            position: relative;
-        }
-        .modal-content h3 {
-            margin-top: 0;
-            color: #2c3e50;
-        }
-        .modal-content .form-group {
-            margin: 15px 0;
-        }
-        .modal-content .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #34495e;
-        }
-        .modal-content .form-group input[type="text"],
-        .modal-content .form-group input[type="email"],
-        .modal-content .form-group input[type="password"],
-        .modal-content .form-group textarea,
-        .modal-content .form-group select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .modal-content .form-group input[type="file"] {
-            width: 100%;
-        }
-        .modal-content .avatar-preview {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .modal-content .avatar-preview img {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
-        .modal-content .buttons {
-            display: flex;
-            justify-content: space-between;
-        }
-        .modal-content button {
-            width: 48%;
-        }
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 24px;
-            cursor: pointer;
-            color: #999;
-        }
-
-        /* 项目/数据集详情弹窗样式 */
-        .details {
-            margin-bottom: 20px;
-        }
-        .details p {
-            margin: 5px 0;
-            color: #34495e;
-        }
-        .related-info {
-            margin-top: 20px;
-        }
-        .related-info h4 {
-            margin: 10px 0;
-            color: #2c3e50;
-        }
-        .related-info ul {
-            list-style: none;
-            padding: 0;
-        }
-        .related-info li {
-            padding: 5px 0;
-            border-bottom: 1px solid #eee;
-        }
+        .modal-content .avatar-preview { display: flex; align-items: center; margin-bottom: 15px; }
+        .modal-content .avatar-preview img { width: 60px; height: 60px; border-radius: 50%; margin-right: 10px; }
+        .modal-content .buttons { display: flex; justify-content: space-between; }
+        .modal-content button { width: 48%; }
+        .close-btn { position: absolute; top: 10px; right: 10px; font-size: 24px; cursor: pointer; color: #999; }
+        .details p { margin: 5px 0; color: #34495e; }
+        .related-info { margin-top: 20px; }
+        .related-info h4 { margin: 10px 0; color: #2c3e50; }
+        .related-info ul { list-style: none; padding: 0; }
+        .related-info li { padding: 5px 0; border-bottom: 1px solid #eee; }
+        .result-card { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px; display: flex; align-items: center; }
+        .result-card img { max-width: 100px; margin-right: 20px; }
+        .comparison-table { margin-top: 20px; }
+        .report-container { display: none; padding: 20px; background: white; }
+        .report-container h1 { text-align: center; font-size: 24px; margin: 10px 0; }
+        .report-container h2 { text-align: center; font-size: 20px; margin: 10px 0; }
+        .report-container p { font-size: 16px; margin: 5px 0; }
+        .report-container table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        .report-container th, .report-container td { border: 1px solid #000; padding: 8px; font-size: 14px; text-align: left; }
+        .report-container img { max-width: 150px; vertical-align: middle; }
+        .report-container .chart { width: 100%; height: 300px; }
+        .filter-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+        .filter-group .form-group { flex: 1; min-width: 200px; }
     </style>
 </head>
 <body>
     <div id="app">
-        <!-- 侧边栏 -->
         <div class="sidebar" v-if="isLoggedIn">
             <h3>功能菜单</h3>
             <ul>
@@ -166,18 +82,15 @@
                 <li :class="{ active: currentSection === 'dataset' }" @click="currentSection = 'dataset'">数据集管理</li>
                 <li :class="{ active: currentSection === 'model' }" @click="currentSection = 'model'">模型管理</li>
                 <li :class="{ active: currentSection === 'predict' }" @click="currentSection = 'predict'">性腺分割预测</li>
+                <li :class="{ active: currentSection === 'history' }" @click="currentSection = 'history'">预测历史查询</li>
                 <li :class="{ active: currentSection === 'query' }" @click="currentSection = 'query'">结果查询</li>
                 <li @click="logout">退出登录</li>
             </ul>
         </div>
-        <!-- 主内容区 -->
         <div class="content">
-            <!-- 头像 -->
             <div class="avatar" v-if="isLoggedIn" @click="showProfileModal">
                 <img :src="avatarUrl" alt="头像" @error="handleImageError">
             </div>
-
-            <!-- 个人信息弹窗 -->
             <div class="modal" :class="{ show: showProfile }">
                 <div class="modal-content">
                     <span class="close-btn" @click="showProfile = false">×</span>
@@ -207,20 +120,16 @@
                     </div>
                 </div>
             </div>
-
-            <!-- 项目详情弹窗 -->
             <div class="modal" :class="{ show: showProjectDetails }">
                 <div class="modal-content">
                     <span class="close-btn" @click="closeProjectDetails">×</span>
                     <h3>项目详情</h3>
                     <div v-if="selectedProject">
-                        <!-- 查看模式 -->
                         <div v-if="!isEditingProject" class="details">
                             <p><strong>项目ID：</strong>{{ selectedProject.id }}</p>
                             <p><strong>项目名称：</strong>{{ selectedProject.name }}</p>
                             <p><strong>创建者：</strong>{{ selectedProject.creator }}</p>
                             <p><strong>描述：</strong>{{ selectedProject.description || '无描述' }}</p>
-                            <!-- 关联数据集 -->
                             <div class="related-info">
                                 <h4>关联数据集</h4>
                                 <ul>
@@ -230,18 +139,16 @@
                                     <li v-if="!relatedDatasets.length">暂无关联数据集</li>
                                 </ul>
                             </div>
-                            <!-- 关联模型 -->
                             <div class="related-info">
                                 <h4>关联模型</h4>
                                 <ul>
-                                    <li v-for="model in relatedModels" :key="model.name">
+                                    <li v-for="model in relatedModels" :key="model.id">
                                         {{ model.name }} (类型: {{ model.type }}, 状态: {{ model.status }})
                                     </li>
                                     <li v-if="!relatedModels.length">暂无关联模型</li>
                                 </ul>
                             </div>
                         </div>
-                        <!-- 编辑模式 -->
                         <div v-else>
                             <div class="form-group">
                                 <label>项目名称</label>
@@ -256,7 +163,6 @@
                                 <textarea v-model="editProject.description"></textarea>
                             </div>
                         </div>
-                        <!-- 按钮 -->
                         <div class="buttons">
                             <button v-if="!isEditingProject" @click="startEditingProject">编辑</button>
                             <button v-if="isEditingProject" @click="saveProject">保存</button>
@@ -267,14 +173,11 @@
                     </div>
                 </div>
             </div>
-
-            <!-- 数据集详情弹窗 -->
             <div class="modal" :class="{ show: showDatasetDetails }">
                 <div class="modal-content">
                     <span class="close-btn" @click="closeDatasetDetails">×</span>
                     <h3>数据集详情</h3>
                     <div v-if="selectedDataset">
-                        <!-- 查看模式 -->
                         <div v-if="!isEditingDataset" class="details">
                             <p><strong>数据集ID：</strong>{{ selectedDataset.id }}</p>
                             <p><strong>数据集名称：</strong>{{ selectedDataset.name }}</p>
@@ -282,7 +185,6 @@
                             <p><strong>数据量：</strong>{{ selectedDataset.size }}</p>
                             <p><strong>关联项目：</strong>{{ selectedDataset.project_name || '无关联项目' }}</p>
                         </div>
-                        <!-- 编辑模式 -->
                         <div v-else>
                             <div class="form-group">
                                 <label>数据集名称</label>
@@ -306,7 +208,6 @@
                                 </select>
                             </div>
                         </div>
-                        <!-- 按钮 -->
                         <div class="buttons">
                             <button v-if="!isEditingDataset" @click="startEditingDataset">编辑</button>
                             <button v-if="isEditingDataset" @click="saveDataset">保存</button>
@@ -317,8 +218,36 @@
                     </div>
                 </div>
             </div>
-
-            <!-- 项目管理 -->
+            <div class="modal" :class="{ show: showModelDetails }">
+                <div class="modal-content">
+                    <span class="close-btn" @click="closeModelDetails">×</span>
+                    <h3>模型评估</h3>
+                    <div v-if="selectedModel">
+                        <div class="details">
+                            <p><strong>模型名称：</strong>{{ selectedModel.name }}</p>
+                            <p><strong>状态：</strong>{{ selectedModel.status }}</p>
+                            <p><strong>准确率：</strong>{{ selectedModel.accuracy ? selectedModel.accuracy.toFixed(4) : '未评估' }}</p>
+                            <p><strong>F1 分数：</strong>{{ selectedModel.f1_score ? selectedModel.f1_score.toFixed(4) : '未评估' }}</p>
+                            <div v-if="confusionMatrix" class="related-info">
+                                <h4>混淆矩阵</h4>
+                                <div :id="`confusion-matrix-${selectedModel.id}`" class="chart-container"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>选择测试数据集</label>
+                            <select v-model="testDatasetId">
+                                <option v-for="dataset in datasets" :value="dataset.id" :key="dataset.id">
+                                    {{ dataset.name }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="buttons">
+                            <button @click="evaluateModel(selectedModel)">评估模型</button>
+                            <button @click="closeModelDetails">关闭</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div v-if="isLoggedIn && currentSection === 'project'" class="section">
                 <h2>项目管理</h2>
                 <button @click="showProjectForm = true">添加项目</button>
@@ -353,7 +282,6 @@
                     </tr>
                 </table>
             </div>
-            <!-- 数据集管理 -->
             <div v-if="isLoggedIn && currentSection === 'dataset'" class="section">
                 <h2>数据集管理</h2>
                 <button @click="showDatasetForm = true">添加数据集</button>
@@ -398,40 +326,226 @@
                     </tr>
                 </table>
             </div>
-            <!-- 模型管理 -->
             <div v-if="isLoggedIn && currentSection === 'model'" class="section">
                 <h2>模型管理</h2>
-                <button @click="trainModel">训练模型</button>
+                <button @click="showTrainingForm = true">训练模型</button>
+                <div v-if="showTrainingForm">
+                    <h3>训练新模型</h3>
+                    <div class="form-group">
+                        <label>模型名称</label>
+                        <select v-model="newModel.name">
+                            <option value="R-SINet">R-SINet</option>
+                            <option value="U-Net">U-Net</option>
+                            <option value="DeepLab">DeepLab</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>模型类型</label>
+                        <select v-model="newModel.type">
+                            <option value="监督学习">监督学习</option>
+                            <option value="无监督学习">无监督学习</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>选择数据集</label>
+                        <select v-model="newModel.dataset_id">
+                            <option v-for="dataset in datasets" :value="dataset.id" :key="dataset.id">
+                                {{ dataset.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>关联项目</label>
+                        <select v-model="newModel.project_id">
+                            <option :value="null">无关联项目</option>
+                            <option v-for="project in projects" :value="project.id" :key="project.id">
+                                {{ project.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>学习率</label>
+                        <input v-model="newModel.learning_rate" type="number" step="0.001">
+                    </div>
+                    <div class="form-group">
+                        <label>迭代次数</label>
+                        <input v-model="newModel.epochs" type="number">
+                    </div>
+                    <button @click="startTraining">开始训练</button>
+                    <button @click="showTrainingForm = false">取消</button>
+                </div>
                 <table>
-                    <tr><th>模型名称</th><th>类型</th><th>状态</th></tr>
-                    <tr v-for="model in models" :key="model.name">
+                    <tr>
+                        <th>模型ID</th>
+                        <th>模型名称</th>
+                        <th>版本</th>
+                        <th>类型</th>
+                        <th>状态</th>
+                        <th>训练进度</th>
+                        <th>操作</th>
+                    </tr>
+                    <tr v-for="model in models" :key="model.id">
+                        <td>{{ model.id }}</td>
                         <td>{{ model.name }}</td>
+                        <td>{{ model.version }}</td>
                         <td>{{ model.type }}</td>
                         <td>{{ model.status }}</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress" :class="{ completed: (model.progress || 0) >= 100 }" :style="{ width: (model.progress || 0) + '%' }"></div>
+                            </div>
+                            <span>{{ model.progress || 0 }}%</span>
+                        </td>
+                        <td>
+                            <button @click="viewModel(model)">评估模型</button>
+                            <button @click="downloadModel(model.id)">下载</button>
+                            <button @click="deleteModel(model.id)">删除</button>
+                        </td>
                     </tr>
                 </table>
             </div>
-            <!-- 性腺分割预测 -->
             <div v-if="isLoggedIn && currentSection === 'predict'" class="section">
                 <h2>性腺分割预测</h2>
                 <div class="form-group">
-                    <label>上传MRI图像</label>
-                    <input type="file" @change="uploadImage">
+                    <label>上传MRI图像（支持批量）</label>
+                    <input type="file" @change="uploadImages" accept="image/*" multiple>
                 </div>
                 <div class="form-group">
-                    <label>选择模型</label>
-                    <select v-model="selectedModel">
-                        <option v-for="model in models" :value="model.name">{{ model.name }}</option>
+                    <label>选择模型（单模型预测）</label>
+                    <select v-model="selectedModelId">
+                        <option v-for="model in models" :value="model.id" :key="model.id">
+                            {{ model.name }}
+                        </option>
                     </select>
                 </div>
-                <button @click="predict">运行预测</button>
+                <div class="form-group">
+                    <label>选择模型（多模型对比，可多选）</label>
+                    <select v-model="selectedModelIds" multiple>
+                        <option v-for="model in models" :value="model.id" :key="model.id">
+                            {{ model.name }}
+                        </option>
+                    </select>
+                </div>
+                <button @click="predict" :disabled="!selectedModelId || !uploadedFiles.length">单模型预测</button>
+                <button @click="predictBatch" :disabled="!selectedModelId || !uploadedFiles.length">批量预测</button>
+                <button @click="predictCompare" :disabled="!selectedModelIds.length || !uploadedFiles.length">模型对比</button>
                 <div v-if="predictionResult">
-                    <h3>预测结果</h3>
-                    <p>性腺区域: 已分割 | 性别: {{ predictionResult.gender }} | 灰度值: {{ predictionResult.grayValue }}</p>
-                    <div id="chart"></div>
+                    <h3>单模型预测结果</h3>
+                    <div class="result-card">
+                        <img :src="predictionResult.mask_url" alt="分割区域" @error="handleImageError">
+                        <div>
+                            <p>文件名: {{ predictionResult.filename }}</p>
+                            <p>性别: {{ predictionResult.gender }} (置信度: {{ (predictionResult.confidence * 100).toFixed(2) }}%)</p>
+                            <p>灰度值: {{ predictionResult.gray_value }}</p>
+                            <p>预测时间: {{ predictionResult.created_at || '未知' }}</p>
+                        </div>
+                    </div>
+                    <div id="chart" class="chart-container"></div>
+                    <button @click="exportSingleReport" :disabled="!predictionResult.filename">导出报告</button>
+                </div>
+                <div v-if="batchResults.length">
+                    <h3>批量预测结果</h3>
+                    <div v-for="result in batchResults" :key="result.id" class="result-card">
+                        <img :src="result.mask_url" alt="分割区域" @error="handleImageError">
+                        <div>
+                            <p>文件名: {{ result.filename }}</p>
+                            <p>性别: {{ result.gender }} (置信度: {{ (result.confidence * 100).toFixed(2) }}%)</p>
+                            <p>灰度值: {{ result.gray_value }}</p>
+                            <p>预测时间: {{ result.created_at || '未知' }}</p>
+                        </div>
+                    </div>
+                    <button @click="exportBatchReport" :disabled="!batchResults.length">导出报告</button>
+                </div>
+                <div v-if="comparisonResults.length">
+                    <h3>模型对比结果</h3>
+                    <table class="comparison-table">
+                        <tr>
+                            <th>模型名称</th>
+                            <th>性别</th>
+                            <th>置信度</th>
+                            <th>灰度值</th>
+                            <th>分割区域</th>
+                            <th>预测时间</th>
+                        </tr>
+                        <tr v-for="result in comparisonResults" :key="result.id">
+                            <td>{{ result.model_name }}</td>
+                            <td>{{ result.gender }}</td>
+                            <td>{{ (result.confidence * 100).toFixed(2) }}%</td>
+                            <td>{{ result.gray_value }}</td>
+                            <td><img :src="result.mask_url" alt="分割区域" style="max-width: 50px;" @error="handleImageError"></td>
+                            <td>{{ result.created_at || '未知' }}</td>
+                        </tr>
+                    </table>
+                    <div id="comparison-chart" class="chart-container"></div>
+                    <button @click="exportComparisonReport" :disabled="!comparisonResults.length">导出报告</button>
                 </div>
             </div>
-            <!-- 结果查询 -->
+            <div v-if="isLoggedIn && currentSection === 'history'" class="section">
+                <h2>预测历史查询</h2>
+                <div class="filter-group">
+                    <div class="form-group">
+                        <label>文件名搜索</label>
+                        <input v-model="historyFilters.search_query" type="text" placeholder="输入文件名关键词">
+                    </div>
+                    <div class="form-group">
+                        <label>性别</label>
+                        <select v-model="historyFilters.gender">
+                            <option value="">全部</option>
+                            <option value="雌性">雌性</option>
+                            <option value="雄性">雄性</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>最低置信度</label>
+                        <input v-model="historyFilters.confidence_min" type="number" step="0.01" min="0" max="1" placeholder="0.0-1.0">
+                    </div>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input v-model="historyFilters.start_date" type="date">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input v-model="historyFilters.end_date" type="date">
+                    </div>
+                    <div class="form-group">
+                        <label>排序方式</label>
+                        <select v-model="historyFilters.sort_by">
+                            <option value="created_at-desc">预测时间（新到旧）</option>
+                            <option value="created_at-asc">预测时间（旧到新）</option>
+                            <option value="confidence-desc">置信度（高到低）</option>
+                            <option value="gray_value-asc">灰度值（低到高）</option>
+                        </select>
+                    </div>
+                </div>
+                <button @click="fetchHistory">查询</button>
+                <button @click="resetHistoryFilters">重置</button>
+                <div v-if="historyResults.length">
+                    <h3>查询结果</h3>
+                    <table>
+                        <tr>
+                            <th>文件名</th>
+                            <th>模型名称</th>
+                            <th>性别</th>
+                            <th>置信度</th>
+                            <th>灰度值</th>
+                            <th>分割区域</th>
+                            <th>预测时间</th>
+                        </tr>
+                        <tr v-for="result in historyResults" :key="result.id">
+                            <td>{{ result.filename }}</td>
+                            <td>{{ result.model_name }}</td>
+                            <td>{{ result.gender }}</td>
+                            <td>{{ (result.confidence * 100).toFixed(2) }}%</td>
+                            <td>{{ result.gray_value }}</td>
+                            <td><img :src="result.mask_url" alt="分割区域" style="max-width: 50px;" @error="handleImageError"></td>
+                            <td>{{ formatDate(result.created_at) }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div v-else-if="historyResultsFetched">
+                    <p>无符合条件的记录</p>
+                </div>
+            </div>
             <div v-if="isLoggedIn && currentSection === 'query'" class="section">
                 <h2>结果查询</h2>
                 <div class="form-group">
@@ -442,6 +556,72 @@
                 <div v-if="queryResultData">
                     <h3>查询结果</h3>
                     <p>{{ queryResultData }}</p>
+                </div>
+            </div>
+            <!-- 报告模板容器 -->
+            <div id="report-template" class="report-container">
+                <div v-if="reportType === 'single'" style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h1 style="text-align: center; font-size: 24px; margin: 10px 0;">性腺分割预测报告</h1>
+                    <h2 style="text-align: center; font-size: 20px; margin: 10px 0;">单模型预测</h2>
+                    <p style="font-size: 16px; margin: 5px 0;"><strong>模型名称:</strong> {{ getModelName(predictionResult.model_id) }}</p>
+                    <p style="font-size: 16px; margin: 5px 0;"><strong>文件名:</strong> {{ predictionResult.filename || '无' }}</p>
+                    <p style="font-size: 16px; margin: 5px 0;"><strong>性别:</strong> {{ predictionResult.gender || '无' }}</p>
+                    <p style="font-size: 16px; margin: 5px 0;"><strong>置信度:</strong> {{ predictionResult.confidence ? (predictionResult.confidence * 100).toFixed(2) + '%' : '无' }}</p>
+                    <p style="font-size: 16px; margin: 5px 0;"><strong>灰度值:</strong> {{ predictionResult.gray_value || '无' }}</p>
+                    <p style="font-size: 16px; margin: 5px 0;"><strong>预测时间:</strong> {{ predictionResult.created_at || '未知' }}</p>
+                    <img v-if="predictionResult.mask_url" :src="predictionResult.mask_url" alt="分割区域" style="max-width: 150px; margin: 10px 0;" @load="imageLoaded" @error="handleImageError">
+                    <div id="report-chart-single" class="chart" style="width: 100%; height: 300px;"></div>
+                </div>
+                <div v-if="reportType === 'batch'" style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h1 style="text-align: center; font-size: 24px; margin: 10px 0;">性腺分割预测报告</h1>
+                    <h2 style="text-align: center; font-size: 20px; margin: 10px 0;">批量预测</h2>
+                    <p style="font-size: 16px; margin: 5px 0;"><strong>模型名称:</strong> {{ batchResults[0] ? getModelName(batchResults[0].model_id) : '无' }}</p>
+                    <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                        <tr>
+                            <th style="border: 1px solid #000; padding: 8px; font-size: 14px;">文件名</th>
+                            <th style="border: 1px solid #000; padding: 8px; font-size: 14px;">性别</th>
+                            <th style="border: 1px solid #000; padding: 8px; font-size: 14px;">置信度</th>
+                            <th style="border: 1px solid #000; padding: 8px; font-size: 14px;">灰度值</th>
+                            <th style="border: 1px solid #000; padding: 8px; font-size: 14px;">分割区域</th>
+                            <th style="border: 1px solid #000; padding: 8px; font-size: 14px;">预测时间</th>
+                        </tr>
+                        <tr v-for="result in batchResults" :key="result.id">
+                            <td style="border: 1px solid #000; padding: 8px; font-size: 14px;">{{ result.filename }}</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-size: 14px;">{{ result.gender }}</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-size: 14px;">{{ (result.confidence * 100).toFixed(2) }}%</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-size: 14px;">{{ result.gray_value }}</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-size: 14px;">
+                                <img :src="result.mask_url" alt="分割区域" style="max-width: 100px;" @load="imageLoaded" @error="handleImageError">
+                            </td>
+                            <td style="border: 1px solid #000; padding: 8px; font-size: 14px;">{{ result.created_at || '未知' }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div v-if="reportType === 'comparison'" style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h1 style="text-align: center; font-size: 24px; margin: 10px 0;">性腺分割预测报告</h1>
+                    <h2 style="text-align: center; font-size: 20px; margin: 10px 0;">模型对比</h2>
+                    <p style="font-size: 16px; margin: 5px 0;"><strong>文件名:</strong> {{ comparisonResults[0] ? comparisonResults[0].filename : '无' }}</p>
+                    <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                        <tr>
+                            <th style="border: 1px solid #000; padding: 8px; font-size: 14px;">模型名称</th>
+                            <th style="border: 1px solid #000; padding: 8px; font-size: 14px;">性别</th>
+                            <th style="border: 1px solid #000; padding: 8px; font-size: 14px;">置信度</th>
+                            <th style="border: 1px solid #000; padding: 8px; font-size: 14px;">灰度值</th>
+                            <th style="border: 1px solid #000; padding: 8px; font-size: 14px;">分割区域</th>
+                            <th style="border: 1px solid #000; padding: 8px; font-size: 14px;">预测时间</th>
+                        </tr>
+                        <tr v-for="result in comparisonResults" :key="result.id">
+                            <td style="border: 1px solid #000; padding: 8px; font-size: 14px;">{{ result.model_name }}</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-size: 14px;">{{ result.gender }}</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-size: 14px;">{{ (result.confidence * 100).toFixed(2) }}%</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-size: 14px;">{{ result.gray_value }}</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-size: 14px;">
+                                <img :src="result.mask_url" alt="分割区域" style="max-width: 100px;" @load="imageLoaded" @error="handleImageError">
+                            </td>
+                            <td style="border: 1px solid #000; padding: 8px; font-size: 14px;">{{ result.created_at || '未知' }}</td>
+                        </tr>
+                    </table>
+                    <div id="report-chart-comparison" class="chart" style="width: 100%; height: 300px;"></div>
                 </div>
             </div>
         </div>
@@ -459,34 +639,49 @@
                 currentSection: 'project',
                 showProjectForm: false,
                 showDatasetForm: false,
+                showTrainingForm: false,
                 showProjectDetails: false,
                 showDatasetDetails: false,
+                showModelDetails: false,
                 selectedProject: null,
                 selectedDataset: null,
+                selectedModel: null,
                 editProject: { id: null, name: '', creator: '', description: '' },
                 editDataset: { id: null, name: '', type: '', size: 0, project_id: null },
                 isEditingProject: false,
                 isEditingDataset: false,
                 newProject: { name: '', creator: '', description: '' },
                 newDataset: { name: '', type: '', size: 0, project_id: null },
+                newModel: { name: 'R-SINet', type: '', dataset_id: null, project_id: null, learning_rate: 0.001, epochs: 10 },
                 projects: [],
                 datasets: [],
+                models: [],
                 relatedDatasets: [],
-                models: [
-                    { name: 'R-SINet', type: '监督学习', status: '已训练', relatedProjectId: 1 },
-                    { name: 'CF-Net', type: '监督学习', status: '已训练', relatedProjectId: 2 },
-                    { name: 'UDA-OG', type: '无监督学习', status: '已训练', relatedProjectId: 1 }
-                ],
-                selectedModel: 'R-SINet',
+                relatedModels: [],
+                selectedModelId: null,
+                selectedModelIds: [],
+                testDatasetId: null,
+                confusionMatrix: null,
+                uploadedFiles: [],
                 predictionResult: null,
+                batchResults: [],
+                comparisonResults: [],
                 queryId: '',
-                queryResultData: ''
-            },
-            computed: {
-                relatedModels() {
-                    if (!this.selectedProject) return [];
-                    return this.models.filter(model => model.relatedProjectId === this.selectedProject.id);
-                }
+                queryResultData: '',
+                historyFilters: {
+                    search_query: '',
+                    gender: '',
+                    confidence_min: null,
+                    start_date: '',
+                    end_date: '',
+                    sort_by: 'created_at-desc'
+                },
+                historyResults: [],
+                historyResultsFetched: false,
+                reportType: null,
+                imagesLoaded: 0,
+                totalImages: 0,
+                chartRendered: false
             },
             mounted() {
                 if (!this.isLoggedIn) {
@@ -495,6 +690,20 @@
                     this.fetchUserInfo();
                     this.fetchProjects();
                     this.fetchDatasets();
+                    this.fetchModels();
+                }
+            },
+            watch: {
+                currentSection(newSection, oldSection) {
+                    if (oldSection === 'model') {
+                        this.stopAllPolling();
+                    }
+                    if (newSection === 'model') {
+                        this.resumePolling();
+                    }
+                    if (newSection === 'history') {
+                        this.fetchHistory();
+                    }
                 }
             },
             methods: {
@@ -550,9 +759,27 @@
                         .catch(error => alert('头像上传失败: ' + error));
                     }
                 },
+                imageLoaded(event) {
+                    this.imagesLoaded++;
+                    console.log('Image loaded:', event.target.src, 'Count:', this.imagesLoaded, '/', this.totalImages);
+                    this.checkExportReady();
+                },
                 handleImageError(event) {
-                    console.error('头像加载失败:', event.target.src);
-                    event.target.src = 'https://via.placeholder.com/40';
+                    console.error('Image failed to load:', event.target.src);
+                    event.target.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+                    this.imagesLoaded++;
+                    console.log('Image error handled, count:', this.imagesLoaded, '/', this.totalImages);
+                    this.checkExportReady();
+                },
+                checkExportReady() {
+                    console.log('Export status:', {
+                        imagesLoaded: this.imagesLoaded,
+                        totalImages: this.totalImages,
+                        chartRendered: this.chartRendered
+                    });
+                    if (this.imagesLoaded >= this.totalImages && this.chartRendered) {
+                        this.finalizeExport();
+                    }
                 },
                 updateProfile() {
                     fetch('http://localhost:8081/api/users/update', {
@@ -574,6 +801,7 @@
                     .catch(error => alert('更新失败: ' + error.message));
                 },
                 logout() {
+                    this.stopAllPolling();
                     this.isLoggedIn = false;
                     localStorage.removeItem('isLoggedIn');
                     localStorage.removeItem('userId');
@@ -604,7 +832,8 @@
                     fetch(`http://localhost:8081/api/projects/${id}`, { method: 'DELETE' })
                         .then(() => {
                             this.projects = this.projects.filter(p => p.id !== id);
-                            this.fetchDatasets(); // 刷新数据集列表
+                            this.fetchDatasets();
+                            this.fetchModels();
                         })
                         .catch(error => alert('删除项目失败: ' + error));
                 },
@@ -614,6 +843,7 @@
                         .then(data => {
                             this.selectedProject = data.project;
                             this.relatedDatasets = data.datasets;
+                            this.relatedModels = data.models;
                             this.showProjectDetails = true;
                             this.isEditingProject = false;
                         })
@@ -648,6 +878,7 @@
                     this.isEditingProject = false;
                     this.selectedProject = null;
                     this.relatedDatasets = [];
+                    this.relatedModels = [];
                     this.editProject = { id: null, name: '', creator: '', description: '' };
                 },
                 fetchDatasets() {
@@ -717,55 +948,506 @@
                     this.selectedDataset = null;
                     this.editDataset = { id: null, name: '', type: '', size: 0, project_id: null };
                 },
-                trainModel() {
-                    alert('模型训练已启动（模拟）');
-                },
-                uploadImage(event) {
-                    const file = event.target.files[0];
-                    if (file) {
-                        const formData = new FormData();
-                        formData.append('image', file);
-                        fetch('http://localhost:8081/api/predict/upload', {
-                            method: 'POST',
-                            body: formData
-                        })
+                fetchModels() {
+                    fetch('http://localhost:8081/api/models')
                         .then(response => response.json())
-                        .then(data => console.log('上传成功:', data))
-                        .catch(error => alert('上传失败: ' + error));
-                    }
+                        .then(data => {
+                            this.models = data.map(model => ({
+                                ...model,
+                                pollingInterval: null,
+                                progress: model.progress || 0
+                            }));
+                            if (this.currentSection === 'model') {
+                                this.models.forEach(model => {
+                                    if (model.status === '训练中' && !model.pollingInterval) {
+                                        this.startProgressPolling(model);
+                                    }
+                                });
+                            }
+                        })
+                        .catch(error => console.error('获取模型失败:', error));
                 },
-                predict() {
-                    fetch('http://localhost:8081/api/predict', {
+                startTraining() {
+                    fetch('http://localhost:8081/api/models/train', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ model: this.selectedModel })
+                        body: JSON.stringify(this.newModel)
                     })
                     .then(response => response.json())
                     .then(data => {
-                        this.predictionResult = data;
-                        this.$nextTick(() => this.renderChart());
+                        this.models.push({ ...data, pollingInterval: null });
+                        this.startProgressPolling(this.models[this.models.length - 1]);
+                        this.newModel = { name: 'R-SINet', type: '', dataset_id: null, project_id: null, learning_rate: 0.001, epochs: 10 };
+                        this.showTrainingForm = false;
+                    })
+                    .catch(error => alert('训练失败: ' + error));
+                },
+                startProgressPolling(model) {
+                    if (model.pollingInterval) {
+                        clearInterval(model.pollingInterval);
+                    }
+                    const interval = setInterval(() => {
+                        fetch(`http://localhost:8081/api/models/${model.id}/progress`)
+                            .then(response => response.json())
+                            .then(data => {
+                                model.progress = data.progress;
+                                model.status = data.status;
+                                if (data.progress >= 100) {
+                                    clearInterval(interval);
+                                    model.pollingInterval = null;
+                                }
+                            })
+                            .catch(error => {
+                                console.error('获取训练进度失败:', error);
+                                clearInterval(interval);
+                                model.pollingInterval = null;
+                            });
+                    }, 2000);
+                    model.pollingInterval = interval;
+                },
+                stopAllPolling() {
+                    this.models.forEach(model => {
+                        if (model.pollingInterval) {
+                            clearInterval(model.pollingInterval);
+                            model.pollingInterval = null;
+                        }
+                    });
+                },
+                resumePolling() {
+                    this.models.forEach(model => {
+                        if (model.status === '训练中' && !model.pollingInterval) {
+                            this.startProgressPolling(model);
+                        }
+                    });
+                },
+                viewModel(model) {
+                    this.selectedModel = model;
+                    this.testDatasetId = model.dataset_id || null;
+                    this.confusionMatrix = null;
+                    this.showModelDetails = true;
+                },
+                evaluateModel(model) {
+                    if (!this.testDatasetId) {
+                        alert('请选择测试数据集');
+                        return;
+                    }
+                    fetch(`http://localhost:8081/api/models/evaluate/${model.id}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ dataset_id: this.testDatasetId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        model.accuracy = data.accuracy;
+                        model.f1_score = data.f1_score;
+                        this.confusionMatrix = data.confusion_matrix;
+                        const index = this.models.findIndex(m => m.id === model.id);
+                        if (index !== -1) {
+                            this.$set(this.models, index, { ...model });
+                        }
+                        this.$nextTick(() => this.renderConfusionMatrix(model.id));
+                    })
+                    .catch(error => alert('评估失败: ' + error));
+                },
+                renderConfusionMatrix(modelId) {
+                    const container = document.getElementById(`confusion-matrix-${modelId}`);
+                    if (!container) return;
+                    if (container.echartsInstance) {
+                        container.echartsInstance.dispose();
+                    }
+                    const chart = echarts.init(container);
+                    container.echartsInstance = chart;
+                    const maxVal = Math.max(...this.confusionMatrix.flat());
+                    chart.setOption({
+                        title: { text: '混淆矩阵', left: 'center' },
+                        tooltip: { formatter: '{b}: {c}' },
+                        grid: { containLabel: true, left: 50, right: 50, top: 50, bottom: 50 },
+                        xAxis: { type: 'category', data: ['正类', '负类'], name: '预测类别' },
+                        yAxis: { type: 'category', data: ['正类', '负类'], name: '实际类别' },
+                        visualMap: { min: 0, max: maxVal, dimension: 2, orient: 'vertical', right: 10, top: 'center' },
+                        series: [{
+                            type: 'heatmap',
+                            data: [
+                                [0, 0, this.confusionMatrix[0][0]], // TP
+                                [1, 0, this.confusionMatrix[0][1]], // FP
+                                [0, 1, this.confusionMatrix[1][0]], // FN
+                                [1, 1, this.confusionMatrix[1][1]]  // TN
+                            ],
+                            label: { show: true, formatter: '{c}' },
+                            itemStyle: { borderColor: '#fff', borderWidth: 1 }
+                        }]
+                    });
+                },
+                closeModelDetails() {
+                    this.showModelDetails = false;
+                    this.selectedModel = null;
+                    this.testDatasetId = null;
+                    this.confusionMatrix = null;
+                },
+                deleteModel(id) {
+                    fetch(`http://localhost:8081/api/models/${id}`, { method: 'DELETE' })
+                        .then(() => {
+                            this.models = this.models.filter(m => m.id !== id);
+                        })
+                        .catch(error => alert('删除模型失败: ' + error));
+                },
+                downloadModel(id) {
+                    window.location.href = `http://localhost:8081/api/models/download/${id}`;
+                },
+                uploadImages(event) {
+                    const files = event.target.files;
+                    const formData = new FormData();
+                    for (let file of files) {
+                        formData.append('images', file);
+                    }
+                    fetch('http://localhost:8081/api/predict/upload-batch', {
+                        method: 'POST',
+                        headers: { 'X-User-ID': this.userId },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        this.uploadedFiles = data.filenames;
+                        alert('图像上传成功');
+                    })
+                    .catch(error => alert('图像上传失败: ' + error));
+                },
+                predict() {
+                    if (!this.selectedModelId || !this.uploadedFiles.length) {
+                        alert('请选择模型并上传图像');
+                        return;
+                    }
+                    fetch('http://localhost:8081/api/predict', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'X-User-ID': this.userId
+                        },
+                        body: JSON.stringify({ filename: this.uploadedFiles[0], model_id: this.selectedModelId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                        } else {
+                            this.predictionResult = data;
+                            this.batchResults = [];
+                            this.comparisonResults = [];
+                            this.$nextTick(() => this.renderChart());
+                        }
                     })
                     .catch(error => alert('预测失败: ' + error));
                 },
+                predictBatch() {
+                    if (!this.selectedModelId || !this.uploadedFiles.length) {
+                        alert('请选择模型并上传图像');
+                        return;
+                    }
+                    fetch('http://localhost:8081/api/predict/batch', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'X-User-ID': this.userId
+                        },
+                        body: JSON.stringify({ filenames: this.uploadedFiles, model_id: this.selectedModelId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                        } else {
+                            this.batchResults = data.results;
+                            this.predictionResult = null;
+                            this.comparisonResults = [];
+                        }
+                    })
+                    .catch(error => alert('批量预测失败: ' + error));
+                },
+                predictCompare() {
+                    if (!this.selectedModelIds.length || !this.uploadedFiles.length) {
+                        alert('请选择至少一个模型并上传图像');
+                        return;
+                    }
+                    fetch('http://localhost:8081/api/predict/compare', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'X-User-ID': this.userId
+                        },
+                        body: JSON.stringify({ filename: this.uploadedFiles[0], model_ids: this.selectedModelIds })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                        } else {
+                            this.comparisonResults = data.results;
+                            this.predictionResult = null;
+                            this.batchResults = [];
+                            this.$nextTick(() => this.renderComparisonChart());
+                        }
+                    })
+                    .catch(error => alert('模型对比失败: ' + error));
+                },
                 renderChart() {
-                    const chart = echarts.init(document.getElementById('chart'));
+                    const container = document.getElementById('chart');
+                    if (!container || !this.predictionResult) return;
+                    const chart = echarts.init(container);
                     chart.setOption({
-                        title: { text: '灰度值分布' },
-                        xAxis: { type: 'category', data: ['区域1', '区域2', '区域3'] },
+                        title: { text: '预测结果', left: 'center' },
+                        xAxis: { type: 'category', data: ['灰度值', '置信度'] },
                         yAxis: { type: 'value' },
-                        series: [{ data: [120, 130, 115], type: 'bar' }]
+                        series: [{
+                            type: 'bar',
+                            data: [
+                                this.predictionResult.gray_value,
+                                this.predictionResult.confidence * 100
+                            ],
+                            itemStyle: { color: '#1abc9c' }
+                        }]
                     });
                 },
-                queryResult() {
-                    console.log("Querying project ID:", this.queryId);
-                    fetch(`http://localhost:8081/api/query/${this.queryId}`)
-                        .then(response => {
-                            console.log("Response:", response);
-                            if (!response.ok) throw new Error("Request failed");
-                            return response.json();
+                renderComparisonChart() {
+                    const container = document.getElementById('comparison-chart');
+                    if (!container || !this.comparisonResults.length) return;
+                    const chart = echarts.init(container);
+                    const modelNames = this.comparisonResults.map(r => r.model_name);
+                    chart.setOption({
+                        title: { text: '模型对比', left: 'center' },
+                        legend: { data: ['灰度值', '置信度'], bottom: 0 },
+                        xAxis: { type: 'category', data: modelNames },
+                        yAxis: { type: 'value' },
+                        series: [
+                            {
+                                name: '灰度值',
+                                type: 'bar',
+                                data: this.comparisonResults.map(r => r.gray_value),
+                                itemStyle: { color: '#1abc9c' }
+                            },
+                            {
+                                name: '置信度',
+                                type: 'bar',
+                                data: this.comparisonResults.map(r => r.confidence * 100),
+                                itemStyle: { color: '#3498db' }
+                            }
+                        ]
+                    });
+                },
+                getModelName(modelId) {
+                    const model = this.models.find(m => m.id === modelId);
+                    return model ? model.name : '未知模型';
+                },
+                exportSingleReport() {
+                    if (!this.predictionResult || !this.predictionResult.filename) {
+                        alert('请先进行单模型预测！');
+                        return;
+                    }
+                    this.reportType = 'single';
+                    this.imagesLoaded = 0;
+                    this.totalImages = this.predictionResult.mask_url ? 1 : 0;
+                    this.chartRendered = false;
+                    this.$nextTick(() => {
+                        const chartContainer = document.getElementById('report-chart-single');
+                        if (!chartContainer) {
+                            console.error('Chart container not found');
+                            return;
+                        }
+                        const chart = echarts.init(chartContainer);
+                        chart.setOption({
+                            title: { text: '预测结果', left: 'center' },
+                            xAxis: { type: 'category', data: ['灰度值', '置信度'] },
+                            yAxis: { type: 'value' },
+                            series: [{
+                                type: 'bar',
+                                data: [
+                                    this.predictionResult.gray_value || 0,
+                                    this.predictionResult.confidence * 100 || 0
+                                ],
+                                itemStyle: { color: '#1abc9c' }
+                            }]
+                        });
+                        chart.on('finished', () => {
+                            this.chartRendered = true;
+                            this.checkExportReady();
+                        });
+                    });
+                },
+                exportBatchReport() {
+                    if (!this.batchResults.length) {
+                        alert('请先进行批量预测！');
+                        return;
+                    }
+                    this.reportType = 'batch';
+                    this.imagesLoaded = 0;
+                    this.totalImages = this.batchResults.filter(r => r.mask_url).length;
+                    this.chartRendered = true; // 批量报告无图表
+                    this.$nextTick(() => {
+                        this.checkExportReady();
+                    });
+                },
+                exportComparisonReport() {
+                    if (!this.comparisonResults.length) {
+                        alert('请先进行模型对比预测！');
+                        return;
+                    }
+                    this.reportType = 'comparison';
+                    this.imagesLoaded = 0;
+                    this.totalImages = this.comparisonResults.filter(r => r.mask_url).length;
+                    console.log('Starting comparison report export, total images:', this.totalImages);
+                    this.$nextTick(() => {
+                        // 检查缓存图片
+                        const imgs = document.querySelectorAll('#report-template img');
+                        imgs.forEach(img => {
+                            if (img.complete && img.naturalHeight !== 0) {
+                                console.log('Cached image loaded:', img.src);
+                                this.imageLoaded({ target: img });
+                            }
+                        });
+                        const chartContainer = document.getElementById('report-chart-comparison');
+                        if (!chartContainer) {
+                            console.error('Chart container not found');
+                            this.chartRendered = true; // 无图表时继续
+                            this.checkExportReady();
+                            return;
+                        }
+                        const chart = echarts.init(chartContainer);
+                        const modelNames = this.comparisonResults.map(r => r.model_name);
+                        chart.setOption({
+                            title: { text: '模型对比', left: 'center' },
+                            legend: { data: ['灰度值', '置信度'], bottom: 0 },
+                            xAxis: { type: 'category', data: modelNames },
+                            yAxis: { type: 'value' },
+                            series: [
+                                {
+                                    name: '灰度值',
+                                    type: 'bar',
+                                    data: this.comparisonResults.map(r => r.gray_value || 0),
+                                    itemStyle: { color: '#1abc9c' }
+                                },
+                                {
+                                    name: '置信度',
+                                    type: 'bar',
+                                    data: this.comparisonResults.map(r => (r.confidence * 100) || 0),
+                                    itemStyle: { color: '#3498db' }
+                                }
+                            ]
+                        });
+                        chart.on('finished', () => {
+                            console.log('Comparison chart rendered');
+                            this.chartRendered = true;
+                            this.checkExportReady();
+                        });
+                        // 超时保护
+                        setTimeout(() => {
+                            if (!this.chartRendered || this.imagesLoaded < this.totalImages) {
+                                console.warn('Export timeout, forcing completion');
+                                this.chartRendered = true;
+                                this.imagesLoaded = this.totalImages;
+                                this.checkExportReady();
+                            }
+                        }, 3000);
+                    });
+                },
+                finalizeExport() {
+                    const reportElement = document.getElementById('report-template');
+                    if (!reportElement) {
+                        console.error('Report template not found');
+                        alert('报告模板未找到！');
+                        return;
+                    }
+                    console.log('Report content:', reportElement.innerHTML.substring(0, 200) + '...');
+                    const filename = this.reportType === 'comparison'
+                        ? `模型对比报告_${this.comparisonResults[0].filename}_${new Date().toISOString().slice(0, 10)}.pdf`
+                        : `报告_${new Date().toISOString().slice(0, 10)}.pdf`;
+                    console.log('Exporting PDF:', filename);
+                    html2pdf()
+                        .set({
+                            filename: filename,
+                            margin: [10, 10, 10, 10],
+                            image: { type: 'jpeg', quality: 0.8 },
+                            html2canvas: { scale: 2, useCORS: true, logging: true },
+                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                         })
+                        .from(reportElement)
+                        .save()
+                        .then(() => {
+                            console.log('PDF exported successfully');
+                            this.cleanupExport();
+                        })
+                        .catch(error => {
+                            console.error('PDF export failed:', error);
+                            alert('导出 PDF 失败：' + error.message);
+                            this.cleanupExport();
+                        });
+                },
+                cleanupExport() {
+                    console.log('Cleaning up export');
+                    this.reportType = null;
+                    this.imagesLoaded = 0;
+                    this.totalImages = 0;
+                    this.chartRendered = false;
+                    const chartIds = ['report-chart-single', 'report-chart-comparison'];
+                    chartIds.forEach(id => {
+                        const container = document.getElementById(id);
+                        if (container && container.echartsInstance) {
+                            container.echartsInstance.dispose();
+                            container.echartsInstance = null;
+                        }
+                    });
+                },
+                fetchHistory() {
+                    const params = new URLSearchParams();
+                    if (this.historyFilters.search_query) params.append('search_query', this.historyFilters.search_query);
+                    if (this.historyFilters.gender) params.append('gender', this.historyFilters.gender);
+                    if (this.historyFilters.confidence_min) params.append('confidence_min', this.historyFilters.confidence_min);
+                    if (this.historyFilters.start_date) params.append('start_date', this.historyFilters.start_date);
+                    if (this.historyFilters.end_date) params.append('end_date', this.historyFilters.end_date);
+                    params.append('sort_by', this.historyFilters.sort_by);
+
+                    fetch(`http://localhost:8081/api/predict/history?${params.toString()}`, {
+                        headers: { 'X-User-ID': this.userId }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                            this.historyResults = [];
+                        } else {
+                            this.historyResults = data.results;
+                        }
+                        this.historyResultsFetched = true;
+                    })
+                    .catch(error => {
+                        alert('查询历史失败: ' + error);
+                        this.historyResults = [];
+                        this.historyResultsFetched = true;
+                    });
+                },
+                resetHistoryFilters() {
+                    this.historyFilters = {
+                        search_query: '',
+                        gender: '',
+                        confidence_min: null,
+                        start_date: '',
+                        end_date: '',
+                        sort_by: 'created_at-desc'
+                    };
+                    this.historyResults = [];
+                    this.historyResultsFetched = false;
+                },
+                formatDate(isoString) {
+                    if (!isoString) return '未知';
+                    const date = new Date(isoString);
+                    return date.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                },
+                queryResult() {
+                    if (!this.queryId) {
+                        alert('请输入项目ID');
+                        return;
+                    }
+                    fetch(`http://localhost:8081/api/query/${this.queryId}`)
+                        .then(response => response.json())
                         .then(data => {
-                            console.log("Data received:", data);
                             this.queryResultData = data.result;
                         })
                         .catch(error => alert('查询失败: ' + error));
